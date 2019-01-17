@@ -26,6 +26,74 @@ import tskit
 import dendropy
 
 
+def from_ms(string):
+    """
+    Returns a tree sequence represetation of the specified ms formatted tree output.
+    """
+    lines = [line.strip() for line in string.splitlines()]
+
+    # Skip any leading non-tree lines.
+    j = 0
+    while j < len(lines) and not lines[j].startswith("["):
+        j += 1
+    if j == len(lines):
+        raise ValueError("Malformed input: no lines starting with [")
+
+    lines = lines[j:]
+    sequence_length = 0
+    trees = []
+    for line in lines:
+        if len(line) == 0:
+            break
+        if not line.startswith("["):
+            raise ValueError("Not in ms format: missing [")
+        index = line.index("]", 1)
+        length = float(line[1: index])
+        sequence_length += length
+        tree = dendropy.Tree.get(data=line[index + 1:], schema="newick")
+        node_ages = [node.age for node in tree.ageorder_node_iter(include_leaves=False)]
+        if len(set(node_ages)) != len(node_ages):
+            raise ValueError("Cannot have two internal nodes with the same time")
+        trees.append((length, tree))
+
+    tables = tskit.TableCollection(sequence_length)
+    # Get the samples from the first tree
+    for node in trees[0][1].leaf_node_iter():
+        tables.nodes.add_row(flags=tskit.NODE_IS_SAMPLE, time=node.age)
+
+    age_id_map = {}
+    left = 0
+    for length, tree in trees:
+        right = left + length
+        for node in tree.ageorder_node_iter(include_leaves=False):
+            children = list(node.child_nodes())
+            if node.age not in age_id_map:
+                age_id_map[node.age] = tables.nodes.add_row(flags=0, time=node.age)
+            parent_id = age_id_map[node.age]
+            for child in children:
+                if child.is_leaf():
+                    child_id = int(child.taxon.label) - 1
+                else:
+                    child_id = age_id_map[child.age]
+                tables.edges.add_row(left, right, parent_id, child_id)
+        left = right
+    tables.sort()
+    # Simplify will squash together any edges, removing redundancy.
+    tables.simplify()
+    return tables.tree_sequence()
+
+
+def to_ms(ts):
+    """
+    Returns an ms-formatted version of the specified tree sequence.
+    """
+    output = ""
+    for tree in ts.trees():
+        length = tree.interval[1] - tree.interval[0]
+        output += "[{}]{}\n".format(length, tree.newick())
+    return output
+
+
 def from_newick(string):
     """
     Returns a tree sequence representation of the specified newick string.
