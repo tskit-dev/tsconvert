@@ -25,6 +25,7 @@ import tskit
 
 import dendropy
 
+
 def from_newick(string):
     """
     Returns a tree sequence representation of the specified newick string.
