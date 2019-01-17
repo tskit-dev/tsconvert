@@ -24,18 +24,18 @@ setup(
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
     ],
-    keywords='tree sequence, newick, Nexus',
+    keywords='tree sequence, newick, nexus',
     packages=['tsconvert'],
     include_package_data=True,
-    install_requires=["tskit"],
+    install_requires=["tskit", "dendropy"],
     entry_points={
         'console_scripts': [
             'tsconvert=tsconvert.__main__:main',
         ],
     },
     project_urls={
-        'Bug Reports': 'https://github.com/tsconvert-dev/tsconvert/issues',
-        'Source': 'https://github.com/tsconvert-dev/tsconvert',
+        'Bug Reports': 'https://github.com/tskit-dev/tsconvert/issues',
+        'Source': 'https://github.com/tsckit-dev/tsconvert',
     },
     license="MIT",
     platforms=["POSIX", "Windows", "MacOS X"],
