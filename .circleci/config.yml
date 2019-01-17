@@ -1,0 +1,60 @@
+version: 2
+jobs:
+  build:
+    docker:
+      - image: circleci/python:3.6-stretch
+    working_directory: /home/circleci/tsconvert
+    steps:
+      - checkout
+      - run: sudo chown -R circleci:circleci *
+      - restore_cache:
+          key: tsconvert-{{ .Branch }}
+      - run:
+          name: Install dependencies and set path
+          command: |
+            pip install --user -r python/requirements/development.txt
+            pip install twine --user
+            # TODO add msprime to the development.txt when we have a stable 0.7.0 release.
+            pip install --user --pre msprime
+            echo 'export PATH=/home/circleci/.local/bin:$PATH' >> $BASH_ENV
+      - save_cache:
+          key: tsconvert-{{ .Branch }}
+          paths:
+            - "/home/circleci/.local"
+
+      - run:
+          name: Lint Python
+          command: |
+            cd python
+            flake8 --max-line-length 89 tsconvert setup.py tests
+
+      - run:
+          name: Run Python tests 
+          command: |
+            nosetests -v --with-coverage --cover-package tsconvert \
+              --cover-branches --cover-erase --cover-xml \
+              --cover-inclusive tests
+            python3 -m codecov 
+            rm .coverage
+
+      - run:
+          name: Build Python package
+          command: |
+            cd python
+            rm -fR build
+            python setup.py sdist
+            python setup.py check
+            python -m twine check dist/*.tar.gz
+            python -m venv venv
+            source venv/bin/activate 
+            pip install --upgrade setuptools pip wheel
+            python setup.py build_ext
+            python setup.py egg_info
+            python setup.py bdist_wheel
+            pip install dist/*.tar.gz 
+
+# Enable when we make the docs
+#       - run:
+#           name: Build docs
+#           command: |
+#             cd docs && make

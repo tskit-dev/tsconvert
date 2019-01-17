@@ -22,4 +22,4 @@
 # SOFTWARE.
 #
 
-from tsconvert.newick import to_newick, from_newick
+from tsconvert.newick import *  # NOQA

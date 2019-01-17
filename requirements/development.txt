@@ -1,0 +1,12 @@
+codecov
+coverage
+flake8
+mock
+nose
+numpy
+tskit
+dendropy
+setuptools_scm
+sphinx
+sphinx-argparse
+sphinx_rtd_theme
