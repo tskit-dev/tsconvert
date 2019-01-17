@@ -11,7 +11,7 @@ setup(
     description='Tree sequence conversion utilities',
     long_description=long_description,
     url='https://github.com/tskit-dev/tsconvert',
-    author='tskit developers',
+    author='Tskit Developers',
     # TODO setup a tskit developers email address.
     author_email='jerome.kelleher@well.ox.ac.uk',
     classifiers=[
@@ -38,7 +38,7 @@ setup(
         'Source': 'https://github.com/tsckit-dev/tsconvert',
     },
     license="MIT",
-    platforms=["POSIX", "Windows", "MacOS X"],
+    platforms=["POSIX", "MacOS X"],
     setup_requires=['setuptools_scm'],
     use_scm_version={"write_to": "tsconvert/_version.py"},
 )

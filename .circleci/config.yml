@@ -12,7 +12,8 @@ jobs:
       - run:
           name: Install dependencies and set path
           command: |
-            pip install --user -r python/requirements/development.txt
+            sudo apt-get install libgsl-dev # Needed for msprime
+            pip install --user -r requirements/development.txt
             pip install twine --user
             # TODO add msprime to the development.txt when we have a stable 0.7.0 release.
             pip install --user --pre msprime
@@ -25,7 +26,6 @@ jobs:
       - run:
           name: Lint Python
           command: |
-            cd python
             flake8 --max-line-length 89 tsconvert setup.py tests
 
       - run:
@@ -40,7 +40,6 @@ jobs:
       - run:
           name: Build Python package
           command: |
-            cd python
             rm -fR build
             python setup.py sdist
             python setup.py check
@@ -53,7 +52,7 @@ jobs:
             python setup.py bdist_wheel
             pip install dist/*.tar.gz 
 
-# Enable when we make the docs
+# TODO Enable when we make the docs
 #       - run:
 #           name: Build docs
 #           command: |
