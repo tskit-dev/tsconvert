@@ -22,50 +22,69 @@
 # SOFTWARE.
 #
 import tskit
-
 import dendropy
 
 
 def from_ms(string):
     """
-    Returns a tree sequence represetation of the specified ms formatted tree output.
+    Returns a tree sequence representation of the specified ms formatted tree output.
     """
-    lines = [line.strip() for line in string.splitlines()]
+    recording_trees = False
+    tree_lines = ""
+    for i, line in enumerate(string.splitlines()):
+        line = line.strip()
+        if line.startswith("["):
+            recording_trees = True
+            tree_lines += line
+        else:
+            if recording_trees:
+                break  # stop after the first non-tree line
 
-    # Skip any leading non-tree lines.
-    j = 0
-    while j < len(lines) and not lines[j].startswith("["):
-        j += 1
-    if j == len(lines):
-        raise ValueError("Malformed input: no lines starting with [")
+    if tree_lines == "":
+        raise ValueError(
+            "Malformed input: no lines starting with [."
+            " Make sure you run ms with the -T and -r flags.")
 
-    lines = lines[j:]
-    sequence_length = 0
-    trees = []
-    for i, line in enumerate(lines, start=j + 1):
-        if len(line) == 0:
-            break
-        if not line.startswith("["):
-            raise ValueError("Line {} not in ms format: missing [".format(i))
-        index = line.index("]", 1)
-        length = float(line[1: index])
-        sequence_length += length
-        tree = dendropy.Tree.get(data=line[index + 1:], schema="newick")
-        node_ages = [node.age for node in tree.ageorder_node_iter(include_leaves=False)]
+    trees = dendropy.TreeList.get(
+        data=tree_lines, schema="newick", extract_comment_metadata=True,
+        rooting="force-rooted")
+
+    if len(trees) == 0:
+        raise ValueError("No valid trees in ms file")
+
+    spans = []
+    for i, tree in enumerate(trees):
+        try:
+            spans.append(float(tree.comments[0]))  # the initial [X] is the first comment
+        except (ValueError, IndexError):
+            raise ValueError(
+                "Problem reading integer # of positions spanned in tree {}".format(i) +
+                " (in ms format this preceeds the tree, in square braces)")
+        if len(trees.taxon_namespace) != sum([1 for l in tree.leaf_node_iter()]):
+            raise ValueError(
+                "Tree {} does not have all {} expected tips".format(
+                    i, len(trees.taxon_namespace)))
+        # below we might want to set is_force_max_age=True to allow ancient tips
+        # and work around branch length precision errors in ms
+        tree.calc_node_ages()
+        node_ages = [n.age for n in tree.ageorder_node_iter(include_leaves=False)]
+        print(node_ages)
         if len(set(node_ages)) != len(node_ages):
             raise ValueError(
-                "Line {}: cannot have two internal nodes with the same time".format(i))
-        trees.append((length, tree))
+                "Tree {}: cannot have two internal nodes with the same time".format(i))
 
-    tables = tskit.TableCollection(sequence_length)
-    # Get the samples from the first tree
-    for node in trees[0][1].leaf_node_iter():
+    # NB: here we could check that the sequence_length == nsites, where nsites is given
+    # in the ms_line, as the second number following the -r switch
+
+    tables = tskit.TableCollection(sum(spans))
+    # Get the samples from the first tree.
+    for node in trees[0].leaf_node_iter():
         tables.nodes.add_row(flags=tskit.NODE_IS_SAMPLE, time=node.age)
 
     age_id_map = {}
     left = 0
-    for length, tree in trees:
-        right = left + length
+    for span, tree in zip(spans, trees):
+        right = left + span
         for node in tree.ageorder_node_iter(include_leaves=False):
             children = list(node.child_nodes())
             if node.age not in age_id_map:
@@ -90,8 +109,8 @@ def to_ms(ts):
     """
     output = ""
     for tree in ts.trees():
-        length = tree.interval[1] - tree.interval[0]
-        output += "[{}]{}\n".format(length, tree.newick())
+        span = tree.interval[1] - tree.interval[0]
+        output += "[{}]{}\n".format(span, tree.newick())
     return output
 
 
@@ -115,6 +134,6 @@ def from_newick(string):
     return tables.tree_sequence()
 
 
-def to_newick(tree):
+def to_newick(tree, precision=16):
     # TODO implement a clean python version here.
-    return tree.newick()
+    return tree.newick(precision=precision)
