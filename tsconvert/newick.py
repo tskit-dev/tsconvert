@@ -42,11 +42,11 @@ def from_ms(string):
     lines = lines[j:]
     sequence_length = 0
     trees = []
-    for i, line in enumerate(lines):
+    for i, line in enumerate(lines, start=j + 1):
         if len(line) == 0:
             break
         if not line.startswith("["):
-            raise ValueError("Line {} not in ms format: missing [".format(i+j+1))
+            raise ValueError("Line {} not in ms format: missing [".format(i))
         index = line.index("]", 1)
         length = float(line[1: index])
         sequence_length += length
@@ -54,8 +54,7 @@ def from_ms(string):
         node_ages = [node.age for node in tree.ageorder_node_iter(include_leaves=False)]
         if len(set(node_ages)) != len(node_ages):
             raise ValueError(
-                "Line {}: cannot have two internal nodes with the same time"
-                .format(i+j+1))
+                "Line {}: cannot have two internal nodes with the same time".format(i))
         trees.append((length, tree))
 
     tables = tskit.TableCollection(sequence_length)
