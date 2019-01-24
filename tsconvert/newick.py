@@ -42,18 +42,19 @@ def from_ms(string):
     lines = lines[j:]
     sequence_length = 0
     trees = []
-    for line in lines:
+    for i, line in enumerate(lines):
         if len(line) == 0:
             break
         if not line.startswith("["):
-            raise ValueError("Not in ms format: missing [")
+            raise ValueError("Line {} not in ms format: missing [".format(i+j))
         index = line.index("]", 1)
         length = float(line[1: index])
         sequence_length += length
         tree = dendropy.Tree.get(data=line[index + 1:], schema="newick")
         node_ages = [node.age for node in tree.ageorder_node_iter(include_leaves=False)]
         if len(set(node_ages)) != len(node_ages):
-            raise ValueError("Cannot have two internal nodes with the same time")
+            raise ValueError(
+                "Line {}: cannot have two internal nodes with the same time".format(i+j))
         trees.append((length, tree))
 
     tables = tskit.TableCollection(sequence_length)
