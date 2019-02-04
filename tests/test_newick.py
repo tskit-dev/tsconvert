@@ -28,6 +28,7 @@ import msprime
 import numpy as np
 import tskit
 import itertools
+import dendropy
 
 import tsconvert
 
@@ -142,20 +143,78 @@ class TestFromMs(unittest.TestCase):
     def test_empty_input(self):
         self.assertRaises(ValueError, tsconvert.from_ms, "")
 
+    def test_ms_without_trees_flag(self):
+        msout = """ms 3 1 -t 4 -r 5 6 -seeds 1 2 3
+        1 2 3
+
+        //
+        segsites: 3
+        positions: 0.3054 0.3812 0.5338
+        111
+        000
+        100
+        """
+        self.assertRaises(ValueError, tsconvert.from_ms, msout)
+
+    def test_empty_trees(self):
+        msout = """
+        [];
+        """
+        self.assertRaises(ValueError, tsconvert.from_ms, msout)
+
+        msout = """
+        [1];
+        """
+        self.assertRaises(ValueError, tsconvert.from_ms, msout)
+
+    def test_ms_without_recombination(self):
+        msout = """
+        ms 4 1 -t 5 -T -seeds 1 2 3
+        1 2 3
+
+        //
+        ((2:0.0680,3:0.0680):0.1481,(1:0.2124,4:0.2124):0.0038);
+        """
+        self.assertRaises(ValueError, tsconvert.from_ms, msout)
+
     def test_malformed_length(self):
         msout = """
-        [5](1:0.27413282187548,2:0.27413282187548);
-        3](1:0.43103605328988,2:0.43103605328988);
+        5(1:0.27413282187548,2:0.27413282187548);
+        """
+        self.assertRaises(ValueError, tsconvert.from_ms, msout)
+
+        msout = """
+        [XXX](1:0.27413282187548,2:0.27413282187548);
+        """
+        self.assertRaises(ValueError, tsconvert.from_ms, msout)
+
+        msout = """
+        [](1:0.27413282187548,2:0.27413282187548);
         """
         self.assertRaises(ValueError, tsconvert.from_ms, msout)
 
         msout = """
         [5(1:0.27413282187548,2:0.27413282187548);
         """
+        self.assertRaises(
+            dendropy.utility.error.DataParseError, tsconvert.from_ms, msout)
+
+    def test_nonmatching_tips(self):
+        msout = """
+        [2](1:0.2144,3:0.2144);
+        [4](3:0.2144,(1:0.0768,2:0.0768):0.1376);
+        """
         self.assertRaises(ValueError, tsconvert.from_ms, msout)
 
         msout = """
-        5(1:0.27413282187548,2:0.27413282187548);
+        [2](2:0.2930,(1:0.2144,4:0.2144):0.0786);
+        [4](3:0.2144,(1:0.0768,2:0.0768):0.1376);
+        """
+        self.assertRaises(ValueError, tsconvert.from_ms, msout)
+
+    def test_identical_node_times(self):
+        msout = """
+        [2](((1:1.5,2:1.5):1.7,3:3.2):1.1,(4:1.5,5:1.5):2.8);
         """
         self.assertRaises(ValueError, tsconvert.from_ms, msout)
 
@@ -171,6 +230,50 @@ class TestFromMs(unittest.TestCase):
         [0](1:0.27413282187548,2:0.27413282187548);
         """
         self.assertRaises(tskit.TskitException, tsconvert.from_ms, msout)
+
+    def test_single_tree(self):
+        msout = """
+        [1](1:0.27413282187548,2:0.27413282187548);
+        """
+        ts = tsconvert.from_ms(msout)
+        self.assertEqual(ts.num_trees, 1)
+
+    def test_full_ms_output(self):
+        msout = """
+        ms 3 1 -t 4 -r 5 6 -seeds 1 2 3 -T
+        1 2 3
+
+        //
+        [2](2:0.2930,(1:0.2144,3:0.2144):0.0786);
+        [4](3:0.2144,(1:0.0768,2:0.0768):0.1376);
+        segsites: 3
+        positions: 0.3054 0.3812 0.5338
+        111
+        000
+        100
+        """
+        ts = tsconvert.from_ms(msout)
+        self.assertEqual(ts.num_samples, 3)
+        self.assertEqual(ts.sequence_length, 6)
+        self.assertEqual(ts.num_trees, 2)
+        self.assertEqual(ts.num_nodes, 6)
+
+        trees = ts.trees()
+        tree = next(trees)
+        self.assertEqual(tree.interval, (0, 2))
+        internal_nodes = set(tree.nodes()) - set(ts.samples())
+        self.assertAlmostEqual(tree.branch_length(0), 0.2144)
+        self.assertAlmostEqual(tree.branch_length(1), 0.2930)
+        self.assertAlmostEqual(tree.branch_length(2), 0.2144)
+        self.assertAlmostEqual(tree.branch_length(min(internal_nodes)), 0.0786)
+
+        tree = next(trees)
+        self.assertEqual(tree.interval, (2, 6))
+        internal_nodes = set(tree.nodes()) - set(ts.samples())
+        self.assertAlmostEqual(tree.branch_length(0), 0.0768)
+        self.assertAlmostEqual(tree.branch_length(1), 0.0768)
+        self.assertAlmostEqual(tree.branch_length(2), 0.2144)
+        self.assertAlmostEqual(tree.branch_length(min(internal_nodes)), 0.1376)
 
     def test_equal_internal_node_time(self):
         #     6
