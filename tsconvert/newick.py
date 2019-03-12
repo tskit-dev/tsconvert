@@ -68,7 +68,6 @@ def from_ms(string):
         # and work around branch length precision errors in ms
         tree.calc_node_ages()
         node_ages = [n.age for n in tree.ageorder_node_iter(include_leaves=False)]
-        print(node_ages)
         if len(set(node_ages)) != len(node_ages):
             raise ValueError(
                 "Tree {}: cannot have two internal nodes with the same time".format(i))

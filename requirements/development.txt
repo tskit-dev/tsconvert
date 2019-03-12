@@ -5,6 +5,8 @@ mock
 nose
 numpy
 tskit
+discsim
+ercs
 dendropy
 setuptools_scm
 sphinx
