@@ -22,11 +22,6 @@ jobs:
             - "/home/circleci/.local"
 
       - run:
-          name: Lint Python
-          command: |
-            flake8 --max-line-length 89 tsconvert setup.py tests
-
-      - run:
           name: Run Python tests 
           command: |
             python3 -m pytest tests --cov=tsconvert --cov-report=xml --cov-branch tests
