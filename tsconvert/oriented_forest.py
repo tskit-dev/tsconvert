@@ -61,13 +61,13 @@ def from_oriented_forest(n, pi, tau):
     # We could do better here by mapping by node time, but we cannot assume that
     # node times are unique as discsim and ercs can have multiple nodes occuring
     # at the same time.
-    for l in range(L):
+    for i in range(L):
         node_map = {j + 1: j for j in range(n)}
-        for j in range(n + 1, len(pi[l])):
-            node_map[j] = tables.nodes.add_row(time=tau[l][j], flags=0)
-        for j in range(1, len(pi[l])):
-            if pi[l][j] != 0:
-                tables.edges.add_row(l, l + 1, node_map[pi[l][j]], node_map[j])
+        for j in range(n + 1, len(pi[i])):
+            node_map[j] = tables.nodes.add_row(time=tau[i][j], flags=0)
+        for j in range(1, len(pi[i])):
+            if pi[i][j] != 0:
+                tables.edges.add_row(i, i + 1, node_map[pi[i][j]], node_map[j])
     tables.sort()
     tables.simplify()
     return tables.tree_sequence()
