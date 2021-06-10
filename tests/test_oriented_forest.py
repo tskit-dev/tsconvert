@@ -22,8 +22,6 @@
 # SOFTWARE.
 #
 
-import unittest
-
 import ercs
 import discsim
 import tskit
@@ -31,13 +29,13 @@ import tskit
 import tsconvert
 
 
-class OrientedForestBaseTest(unittest.TestCase):
+class OrientedForestBaseTest:
     def verify_tree(self, tree, n, pi, tau):
         """
         Verifies the specified oriented tree representation is equivalent to the
         specified tskit tree.
         """
-        self.assertEqual(sorted(tree.samples()), list(range(n)))
+        assert sorted(tree.samples()) == list(range(n))
         for j in range(n):
             p1 = []
             u = j
@@ -50,7 +48,7 @@ class OrientedForestBaseTest(unittest.TestCase):
             while u != 0:
                 p2.append(tau[u])
                 u = pi[u]
-            self.assertEqual(p1, p2)
+            assert p1 == p2
 
 
 class TestSingleTree(OrientedForestBaseTest):
@@ -59,9 +57,9 @@ class TestSingleTree(OrientedForestBaseTest):
     """
     def verify(self, n, pi, tau):
         ts = tsconvert.from_oriented_forest(n, pi, tau)
-        self.assertEqual(ts.num_trees, 1)
+        assert ts.num_trees == 1
         tree = ts.first()
-        self.assertEqual(ts.num_samples, n)
+        assert ts.num_samples == n
         self.verify_tree(tree, n, pi[0], tau[0])
 
     def test_discsim_n3(self):
@@ -116,9 +114,9 @@ class TestManyTrees(OrientedForestBaseTest):
     """
     def verify(self, n, pi, tau):
         ts = tsconvert.from_oriented_forest(n, pi, tau)
-        self.assertEqual(len(tau), len(pi))
-        self.assertEqual(ts.sequence_length, len(pi))
-        self.assertEqual(ts.num_samples, n)
+        assert len(tau) == len(pi)
+        assert ts.sequence_length == len(pi)
+        assert ts.num_samples == n
         for tree in ts.trees():
             for i in range(*map(int, tree.interval)):
                 self.verify_tree(tree, n, pi[i], tau[i])
@@ -138,7 +136,7 @@ class TestManyTrees(OrientedForestBaseTest):
         num_loci = 10
         sim.recombination_probabilities = [0.1] * (num_loci - 1)
         pi, tau = sim.run(1)
-        self.assertEqual(len(pi), num_loci)
+        assert len(pi) == num_loci
         self.verify(3, pi, tau)
 
     def test_discsim_n10(self):
@@ -156,7 +154,7 @@ class TestManyTrees(OrientedForestBaseTest):
         num_loci = 3
         sim.recombination_probabilities = [0.1] * (num_loci - 1)
         pi, tau = sim.run(1)
-        self.assertEqual(len(pi), num_loci)
+        assert len(pi) == num_loci
         self.verify(10, pi, tau)
 
     def test_discsim_n10_nonbinary(self):
@@ -174,5 +172,5 @@ class TestManyTrees(OrientedForestBaseTest):
         num_loci = 3
         sim.recombination_probabilities = [0.1] * (num_loci - 1)
         pi, tau = sim.run(1)
-        self.assertEqual(len(pi), num_loci)
+        assert len(pi) == num_loci
         self.verify(10, pi, tau)

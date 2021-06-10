@@ -2,9 +2,11 @@ codecov
 coverage
 flake8
 mock
-nose
 numpy
+pytest
+pytest-cov
 tskit
+msprime
 discsim
 ercs
 dendropy
