@@ -60,7 +60,7 @@ def from_ms(string):
             raise ValueError(
                 "Problem reading integer # of positions spanned in tree {}".format(i) +
                 " (in ms format this preceeds the tree, in square braces)")
-        if len(trees.taxon_namespace) != sum([1 for l in tree.leaf_node_iter()]):
+        if len(trees.taxon_namespace) != sum([1 for _ in tree.leaf_node_iter()]):
             raise ValueError(
                 "Tree {} does not have all {} expected tips".format(
                     i, len(trees.taxon_namespace)))

@@ -92,8 +92,8 @@ class TestSingleTreeRoundTrip(unittest.TestCase):
         conv_ts = tsconvert.from_newick(newick)
         self.assertEqual(conv_ts.num_trees, 1)
         conv_tree = conv_ts.first()
-        source_str = source_tree.draw(format="unicode", node_labels={})
-        conv_str = conv_tree.draw(format="unicode", node_labels={})
+        source_str = source_tree.draw(format="unicode", node_labels={}, order="tree")
+        conv_str = conv_tree.draw(format="unicode", node_labels={}, order="tree")
         # The tree sequences are canonical, so the nodes are allocated in
         # time order. We should be identical other than the leaf labels.
         self.assertEqual(source_str, conv_str)
@@ -394,4 +394,4 @@ class TestFromMs(unittest.TestCase):
         [2](1:1.80041212,(3:0.12737966,(2:0.02380236,4:0.02380236):0.10357730):1.67303246);
         """
         tables = tsconvert.from_ms(msout).tables
-        self.assertEqual(tables, ts.tables)
+        tables.assert_equals(ts.tables, ignore_timestamps=True)

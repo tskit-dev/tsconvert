@@ -120,8 +120,8 @@ class TestManyTrees(OrientedForestBaseTest):
         self.assertEqual(ts.sequence_length, len(pi))
         self.assertEqual(ts.num_samples, n)
         for tree in ts.trees():
-            for l in range(*map(int, tree.interval)):
-                self.verify_tree(tree, n, pi[l], tau[l])
+            for i in range(*map(int, tree.interval)):
+                self.verify_tree(tree, n, pi[i], tau[i])
 
     def test_discsim_n3(self):
         sim = discsim.Simulator(10)
