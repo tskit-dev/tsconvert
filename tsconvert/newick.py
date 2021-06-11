@@ -21,8 +21,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 #
-import tskit
 import dendropy
+import tskit
 
 
 def from_ms(string):
@@ -31,7 +31,7 @@ def from_ms(string):
     """
     recording_trees = False
     tree_lines = ""
-    for i, line in enumerate(string.splitlines()):
+    for line in string.splitlines():
         line = line.strip()
         if line.startswith("["):
             recording_trees = True
@@ -43,11 +43,15 @@ def from_ms(string):
     if tree_lines == "":
         raise ValueError(
             "Malformed input: no lines starting with [."
-            " Make sure you run ms with the -T and -r flags.")
+            " Make sure you run ms with the -T and -r flags."
+        )
 
     trees = dendropy.TreeList.get(
-        data=tree_lines, schema="newick", extract_comment_metadata=True,
-        rooting="force-rooted")
+        data=tree_lines,
+        schema="newick",
+        extract_comment_metadata=True,
+        rooting="force-rooted",
+    )
 
     if len(trees) == 0:
         raise ValueError("No valid trees in ms file")
@@ -55,22 +59,28 @@ def from_ms(string):
     spans = []
     for i, tree in enumerate(trees):
         try:
-            spans.append(float(tree.comments[0]))  # the initial [X] is the first comment
+            spans.append(
+                float(tree.comments[0])
+            )  # the initial [X] is the first comment
         except (ValueError, IndexError):
             raise ValueError(
-                "Problem reading integer # of positions spanned in tree {}".format(i) +
-                " (in ms format this preceeds the tree, in square braces)")
-        if len(trees.taxon_namespace) != sum([1 for _ in tree.leaf_node_iter()]):
+                f"Problem reading integer # of positions spanned in tree {i}"
+                + " (in ms format this preceeds the tree, in square braces)"
+            )
+        if len(trees.taxon_namespace) != sum(1 for _ in tree.leaf_node_iter()):
             raise ValueError(
                 "Tree {} does not have all {} expected tips".format(
-                    i, len(trees.taxon_namespace)))
+                    i, len(trees.taxon_namespace)
+                )
+            )
         # below we might want to set is_force_max_age=True to allow ancient tips
         # and work around branch length precision errors in ms
         tree.calc_node_ages()
         node_ages = [n.age for n in tree.ageorder_node_iter(include_leaves=False)]
         if len(set(node_ages)) != len(node_ages):
             raise ValueError(
-                "Tree {}: cannot have two internal nodes with the same time".format(i))
+                f"Tree {i}: cannot have two internal nodes with the same time"
+            )
 
     # NB: here we could check that the sequence_length == nsites, where nsites is given
     # in the ms_line, as the second number following the -r switch
@@ -109,7 +119,7 @@ def to_ms(ts):
     output = ""
     for tree in ts.trees():
         span = tree.interval[1] - tree.interval[0]
-        output += "[{}]{}\n".format(span, tree.newick())
+        output += f"[{span}]{tree.newick()}\n"
     return output
 
 

@@ -21,9 +21,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 #
-
-import ercs
 import discsim
+import ercs
 import tskit
 
 import tsconvert
@@ -55,6 +54,7 @@ class TestSingleTree(OrientedForestBaseTest):
     """
     Tests that we can extract an oriented tree topology from a single locus simulation.
     """
+
     def verify(self, n, pi, tau):
         ts = tsconvert.from_oriented_forest(n, pi, tau)
         assert ts.num_trees == 1
@@ -112,6 +112,7 @@ class TestManyTrees(OrientedForestBaseTest):
     """
     Tests that we can extract an oriented tree topology from a multi locus simulation.
     """
+
     def verify(self, n, pi, tau):
         ts = tsconvert.from_oriented_forest(n, pi, tau)
         assert len(tau) == len(pi)

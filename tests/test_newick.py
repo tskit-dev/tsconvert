@@ -21,15 +21,15 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 #
+import itertools
 
+import dendropy
 import msprime
 import numpy as np
+import pytest
 import tskit
-import itertools
-import dendropy
 
 import tsconvert
-import pytest
 
 
 def kc_distance(tree1, tree2):
@@ -65,10 +65,13 @@ def kc_distance(tree1, tree2):
 
 def get_nonbinary_example(sample_size=20, recombination_rate=0, random_seed=42):
     ts = msprime.simulate(
-        sample_size=sample_size, recombination_rate=recombination_rate,
+        sample_size=sample_size,
+        recombination_rate=recombination_rate,
         random_seed=random_seed,
         demographic_events=[
-            msprime.SimpleBottleneck(time=0.5, population=0, proportion=1)])
+            msprime.SimpleBottleneck(time=0.5, population=0, proportion=1)
+        ],
+    )
     # Make sure this really has some non-binary nodes
     found = False
     for e in ts.edgesets():
@@ -84,6 +87,7 @@ class TestSingleTreeRoundTrip:
     Tests that we can successfully roundtrip trees with various topologies
     from a tree sequence containing a single tree.
     """
+
     def verify(self, ts):
         assert ts.num_trees == 1
         source_tree = ts.first()
@@ -111,6 +115,7 @@ class TestMsRoundTrip:
     """
     Tests if we can round trip tree sequences through the ms format.
     """
+
     def verify(self, ts):
         msout = tsconvert.to_ms(ts.simplify())
         new_ts = tsconvert.from_ms(msout)
@@ -138,6 +143,7 @@ class TestFromMs:
     """
     Tests for the from_ms function.
     """
+
     def test_empty_input(self):
         with pytest.raises(ValueError):
             tsconvert.from_ms("")
@@ -355,14 +361,14 @@ class TestFromMs:
         msout = """
         /home/jk/.local/bin/mspms 4 1 -T -r 4 10 -p 8
         961626313 1881970557 110898863
-
+        
         //
         [5](1:0.70961771,(4:0.33536000,(2:0.12737966,3:0.12737966):0.20798034):0.37425772);
         [1]((2:0.12737966,3:0.12737966):0.20798034,(1:0.21249950,4:0.21249950):0.12286050);
         [2]((3:0.12737966,(2:0.02380236,4:0.02380236):0.10357730):0.20798034,1:0.33536000);
         [1](1:1.32624987,(3:0.12737966,(2:0.02380236,4:0.02380236):0.10357730):1.19887022);
         [2](1:1.80041212,(3:0.12737966,(2:0.02380236,4:0.02380236):0.10357730):1.67303246);
-        """
+        """  # noqa: B950 W293
         ts = tsconvert.from_ms(msout)
         assert ts.num_samples == 4
         assert ts.sequence_length == 11
@@ -403,6 +409,6 @@ class TestFromMs:
         [2]((3:0.12737966,(2:0.02380236,4:0.02380236):0.10357730):0.20798034,1:0.33536000);
         [1](1:1.32624987,(3:0.12737966,(2:0.02380236,4:0.02380236):0.10357730):1.19887022);
         [2](1:1.80041212,(3:0.12737966,(2:0.02380236,4:0.02380236):0.10357730):1.67303246);
-        """
+        """  # noqa: B950
         tables = tsconvert.from_ms(msout).tables
         tables.assert_equals(ts.tables, ignore_timestamps=True)
