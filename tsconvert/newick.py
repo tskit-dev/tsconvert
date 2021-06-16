@@ -140,7 +140,64 @@ def from_newick(string):
         node_id = id_map[node]
         for child in children:
             tables.edges.add_row(0, 1, node_id, id_map[child])
+    tables.sort()
     return tables.tree_sequence()
+
+
+def get_dendropy_node_id(node):
+    """
+    From a DendroPy Node object, returns the ID of that node.
+    """
+    if node._label is None:
+        return int(node.taxon._label.split()[1])
+    else:
+        return int(node._label.split()[1])
+
+
+def from_argon(string, sequence_length):
+    """
+    Returns a tree sequence representation of an ARGON .trees file.
+    (Does not include mutations!)
+    """
+    string_by_lines = string.splitlines()
+    tables = tskit.TableCollection(sequence_length)
+    id_map = {}
+
+    # Each line corresponds to a tree.
+    for line in string_by_lines:
+        argon_tree = line.split("\t")
+        # unused tmrca = argon_tree[0]
+        left = float(argon_tree[1]) - 1
+        right = float(argon_tree[2])
+
+        # Read in the tree.
+        tree = dendropy.Tree.get(data=argon_tree[3], schema="newick")
+
+        # Make the tables.
+        for node in tree.ageorder_node_iter():
+            time = node.age
+            node_id_argon = get_dendropy_node_id(node)
+            children = list(node.child_nodes())
+            # The keys of id_map need to include the time of the node,
+            # because, annoyingly, ARGON sometimes gives the same
+            # id label to nodes in different times
+            if (node_id_argon, time) not in id_map:
+                flags = tskit.NODE_IS_SAMPLE if len(children) == 0 else 0
+                # TODO derive information from the node and store it as JSON metadata.
+                id_map[(node_id_argon, time)] = tables.nodes.add_row(
+                    flags=flags, time=time
+                )
+            node_id = id_map[(node_id_argon, time)]
+            for child in children:
+                tables.edges.add_row(
+                    left,
+                    right,
+                    node_id,
+                    id_map[(get_dendropy_node_id(child), child.age)],
+                )
+
+    tables.sort()
+    return tables.tree_sequence().simplify()
 
 
 def to_newick(tree, precision=16):
