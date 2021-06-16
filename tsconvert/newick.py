@@ -140,6 +140,7 @@ def from_newick(string):
         node_id = id_map[node]
         for child in children:
             tables.edges.add_row(0, 1, node_id, id_map[child])
+    tables.sort()
     return tables.tree_sequence()
 
 
