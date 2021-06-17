@@ -93,6 +93,17 @@ class TestSingleTreeRoundTrip:
         source_tree = ts.first()
         newick = tsconvert.to_newick(source_tree)
         conv_ts = tsconvert.from_newick(newick)
+
+        # Round tripping can introduce very slightly differing node times
+        # due to floating point manipulations, so round the times
+        conv_tables = conv_ts.dump_tables()
+        nodes = conv_tables.nodes.copy()
+        conv_tables.nodes.clear()
+        for node in nodes:
+            conv_tables.nodes.append(node.replace(time=round(node.time, 15)))
+        conv_tables.sort()
+        conv_ts = conv_tables.tree_sequence()
+
         assert conv_ts.num_trees == 1
         conv_tree = conv_ts.first()
         source_str = source_tree.draw(format="unicode", node_labels={}, order="tree")
@@ -100,9 +111,9 @@ class TestSingleTreeRoundTrip:
         # The tree sequences are canonical, so the nodes are allocated in
         # time order. We should be identical other than the leaf labels.
         assert source_str == conv_str
-        assert np.allclose(conv_ts.tables.nodes.time, ts.tables.nodes.time)
-        assert list(range(ts.num_samples)) == list(conv_tree.leaves())
-        assert list(range(ts.num_samples)) == list(conv_tree.samples())
+        assert np.allclose(
+            sorted(conv_ts.tables.nodes.time), sorted(ts.tables.nodes.time)
+        )
 
     def test_msprime_binary(self):
         self.verify(msprime.simulate(10, random_seed=1))
@@ -412,3 +423,76 @@ class TestFromMs:
         """  # noqa: B950
         tables = tsconvert.from_ms(msout).tables
         tables.assert_equals(ts.tables, ignore_timestamps=True)
+
+
+class TestNewicks:
+    def test_non_ultrametric(self):
+        newick = "((5:0.10,6:0.20):5.34,(7:1.00,8:0.01):0.02,4:42.42);"
+        assert tsconvert.from_newick(newick).first().newick(precision=2) == newick
+
+    def test_empty(self):
+        with pytest.raises(ValueError, match="Newick string was empty"):
+            tsconvert.from_newick("")
+
+    def test_multitree(self):
+        with pytest.raises(
+            ValueError, match="Only one tree can be imported from a newick string"
+        ):
+            tsconvert.from_newick("(2:10.00,3:10.00);(2:10.00,3:10.00);")
+
+    def test_annotation_ignored(self):
+        assert (
+            tsconvert.from_newick("(2:0.10,[IGNOREME]3:0.10);")
+            .first()
+            .newick(precision=2)
+            == "(2:0.10,3:0.10);"
+        )
+
+    def test_root_time(self):
+        ts = tsconvert.from_newick("(2:0.10,3:0.20):42.00;")
+        # Root times are removed from tskit's newick output:
+        assert ts.first().newick(precision=2) == "(2:0.10,3:0.20);"
+        # But should still be in the ts:
+        assert np.array_equal(ts.tables.nodes.time, [42.2, 42.1, 42.0])
+
+    def test_zero_branch_length(self):
+        with pytest.raises(
+            ValueError,
+            match="tskit tree sequences cannot contain edges" " with lengths <= 0",
+        ):
+            tsconvert.from_newick("(2:0.10,3:0.00);")
+
+        ts = tsconvert.from_newick("(2:0.10,3:0.00);", 0.01)
+        assert ts.first().newick(precision=2) == "(2:0.10,3:0.01);"
+
+    def test_negative_branch_length(self):
+        with pytest.raises(
+            ValueError,
+            match="tskit tree sequences cannot contain edges" " with lengths <= 0",
+        ):
+            tsconvert.from_newick("(2:0.10,3:0.00);")
+
+        ts = tsconvert.from_newick("(2:0.10,3:-10.01);", 0.01)
+        assert ts.first().newick(precision=2) == "(2:0.10,3:0.01);"
+
+    def test_ids(self):
+        ts = tsconvert.from_newick("(BILL:0.10,:0.30)LUCY;")
+        assert ts.first().newick(precision=2) == "(2:0.10,3:0.30);"
+        assert tuple(n.metadata for n in ts.nodes()) == (
+            {"newick_id": "LUCY"},
+            {"newick_id": "BILL"},
+            {},
+        )
+
+    def test_comments(self):
+        ts = tsconvert.from_newick(
+            '(BILL[42]:0.10,[!"£$%^&*_+-={}<>,.?/~#|`¬]:0.30)LUCY;'
+        )
+        assert ts.first().newick(precision=2) == "(2:0.10,3:0.30);"
+        assert tuple(n.metadata for n in ts.nodes()) == (
+            {
+                "newick_id": "LUCY",
+            },
+            {"newick_id": "BILL", "newick_comment": "42"},
+            {"newick_comment": '!"£$%^&*_+-={}<>,.?/~#|`¬'},
+        )

@@ -22,6 +22,7 @@
 # SOFTWARE.
 #
 import dendropy
+import newick
 import tskit
 
 
@@ -123,23 +124,80 @@ def to_ms(ts):
     return output
 
 
-def from_newick(string):
+def from_newick(string, min_edge_length=0):
     """
     Returns a tree sequence representation of the specified newick string.
+
+    The tree sequence will contain a single tree, as specified by the newick. All
+    leaf nodes will be marked as samples (``tskit.NODE_IS_SAMPLE``).
+
+    :param string string: Newick string
+    :param float min_edge_length: Replace any edge length shorter than this value by this
+        value. Unlike newick, tskit doesn't support zero or negative edge lengths, so
+        setting this argument to a small value is necessary when importing trees with
+        zero or negative lengths.
     """
-    tree = dendropy.Tree.get(data=string, schema="newick")
+    trees = newick.loads(string)
+    if len(trees) > 1:
+        raise ValueError("Only one tree can be imported from a newick string")
+    if len(trees) == 0:
+        raise ValueError("Newick string was empty")
+    tree = trees[0]
     tables = tskit.TableCollection(1)
+    nodes = tables.nodes
+    nodes.metadata_schema = tskit.MetadataSchema(
+        {
+            "codec": "json",
+            "type": "object",
+            "properties": {
+                "newick_id": {
+                    "type": ["string"],
+                    "description": "ID from newick file",
+                },
+                "newick_comment": {
+                    "type": ["string"],
+                    "description": "Comment from newick file",
+                },
+            },
+        }
+    )
 
     id_map = {}
-    for node in tree.ageorder_node_iter():
-        children = list(node.child_nodes())
-        if node not in id_map:
-            flags = tskit.NODE_IS_SAMPLE if len(children) == 0 else 0
-            # TODO derive information from the node and store it as JSON metadata.
-            id_map[node] = tables.nodes.add_row(flags=flags, time=node.age)
-        node_id = id_map[node]
-        for child in children:
-            tables.edges.add_row(0, 1, node_id, id_map[child])
+
+    def get_or_add_node(newick_node, time):
+        if newick_node not in id_map:
+            flags = tskit.NODE_IS_SAMPLE if len(newick_node.descendants) == 0 else 0
+            metadata = {}
+            if newick_node.name:
+                metadata["newick_id"] = newick_node.name
+            if newick_node.comment:
+                metadata["newick_comment"] = newick_node.comment
+            id_map[newick_node] = tables.nodes.add_row(
+                flags=flags, time=time, metadata=metadata
+            )
+        return id_map[newick_node]
+
+    print(tree.newick)
+    root = next(tree.walk())
+    get_or_add_node(root, 0)
+    for newick_node in tree.walk():
+        node_id = id_map[newick_node]
+        for child in newick_node.descendants:
+            length = max(child.length, min_edge_length)
+            if length <= 0:
+                raise ValueError(
+                    "tskit tree sequences cannot contain edges with lengths"
+                    " <= 0. Set min_edge_length to force lengths to a"
+                    "minimum size"
+                )
+            child_node_id = get_or_add_node(child, nodes[node_id].time - length)
+            tables.edges.add_row(0, 1, node_id, child_node_id)
+    # Rewrite node times to fit the tskit convention of zero at the youngest leaf
+    nodes = tables.nodes.copy()
+    youngest = min(tables.nodes.time)
+    tables.nodes.clear()
+    for node in nodes:
+        tables.nodes.append(node.replace(time=node.time - youngest + root.length))
     tables.sort()
     return tables.tree_sequence()
 
