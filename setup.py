@@ -1,16 +1,9 @@
-import codecs
-import os
-
 from setuptools import setup
-
-here = os.path.abspath(os.path.dirname(__file__))
-with codecs.open(os.path.join(here, "README.rst"), encoding="utf-8") as f:
-    long_description = f.read()
 
 setup(
     name="tsconvert",
     description="Tree sequence conversion utilities",
-    long_description=long_description,
+    long_description="Convert various file formats to and from tskit tree sequences",
     url="https://github.com/tskit-dev/tsconvert",
     author="Tskit Developers",
     python_requires=">=3.7",
