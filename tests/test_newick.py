@@ -479,8 +479,8 @@ class TestNewicks:
         ts = tsconvert.from_newick("(BILL:0.10,:0.30)LUCY;")
         assert ts.first().newick(precision=2) == "(2:0.10,3:0.30);"
         assert tuple(n.metadata for n in ts.nodes()) == (
-            {"newick_id": "LUCY"},
-            {"newick_id": "BILL"},
+            {"name": "LUCY"},
+            {"name": "BILL"},
             {},
         )
 
@@ -491,8 +491,8 @@ class TestNewicks:
         assert ts.first().newick(precision=2) == "(2:0.10,3:0.30);"
         assert tuple(n.metadata for n in ts.nodes()) == (
             {
-                "newick_id": "LUCY",
+                "name": "LUCY",
             },
-            {"newick_id": "BILL", "newick_comment": "42"},
-            {"newick_comment": '!"£$%^&*_+-={}<>,.?/~#|`¬'},
+            {"name": "BILL", "comment": "42"},
+            {"comment": '!"£$%^&*_+-={}<>,.?/~#|`¬'},
         )

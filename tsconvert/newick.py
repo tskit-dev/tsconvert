@@ -129,7 +129,8 @@ def from_newick(string, min_edge_length=0):
     Returns a tree sequence representation of the specified newick string.
 
     The tree sequence will contain a single tree, as specified by the newick. All
-    leaf nodes will be marked as samples (``tskit.NODE_IS_SAMPLE``).
+    leaf nodes will be marked as samples (``tskit.NODE_IS_SAMPLE``). Newick names and
+    comments will be written to the node metadata.
 
     :param string string: Newick string
     :param float min_edge_length: Replace any edge length shorter than this value by this
@@ -150,11 +151,11 @@ def from_newick(string, min_edge_length=0):
             "codec": "json",
             "type": "object",
             "properties": {
-                "newick_id": {
+                "name": {
                     "type": ["string"],
-                    "description": "ID from newick file",
+                    "description": "Name from newick file",
                 },
-                "newick_comment": {
+                "comment": {
                     "type": ["string"],
                     "description": "Comment from newick file",
                 },
@@ -169,15 +170,14 @@ def from_newick(string, min_edge_length=0):
             flags = tskit.NODE_IS_SAMPLE if len(newick_node.descendants) == 0 else 0
             metadata = {}
             if newick_node.name:
-                metadata["newick_id"] = newick_node.name
+                metadata["name"] = newick_node.name
             if newick_node.comment:
-                metadata["newick_comment"] = newick_node.comment
+                metadata["comment"] = newick_node.comment
             id_map[newick_node] = tables.nodes.add_row(
                 flags=flags, time=time, metadata=metadata
             )
         return id_map[newick_node]
 
-    print(tree.newick)
     root = next(tree.walk())
     get_or_add_node(root, 0)
     for newick_node in tree.walk():
