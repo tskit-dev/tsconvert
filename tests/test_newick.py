@@ -21,7 +21,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 #
+import io
 import itertools
+import os
 
 import dendropy
 import msprime
@@ -496,3 +498,121 @@ class TestNewicks:
             {"name": "BILL", "comment": "42"},
             {"comment": '!"£$%^&*_+-={}<>,.?/~#|`¬'},
         )
+
+    def test_nextstrain_newick(self):
+        with open(
+            os.path.join(os.path.dirname(__file__), "data", "nextstrain.nwk")
+        ) as f:
+            newick = f.read()
+        ts = tsconvert.from_newick(newick)
+        assert ts.num_trees == 1
+        assert ts.num_nodes == 268
+        assert ts.num_edges == 267
+
+
+class TestTextTables:
+
+    newick = "(BILL:0.10,BOB:0.30)LUCY;"
+
+    def test_simple(self):
+        ts = tsconvert.from_newick(self.newick)
+        csv = io.StringIO("first_name\tvalue\nBILL\t42\nLUCY\t12\nBOB\t25\n")
+        ts = tsconvert.csv_to_node_metadata(ts, csv, "first_name", "name")
+        nodes = ts.tables.nodes
+        assert nodes[0].metadata == {
+            "first_name": "LUCY",
+            "name": "LUCY",
+            "value": "12",
+        }
+        assert nodes[1].metadata == {
+            "first_name": "BILL",
+            "name": "BILL",
+            "value": "42",
+        }
+        assert nodes[2].metadata == {"first_name": "BOB", "name": "BOB", "value": "25"}
+
+    def test_missing_in_csv(self):
+        ts = tsconvert.from_newick(self.newick)
+        csv = io.StringIO("first_name\tvalue\nBILL\t42\nLUCY\t12\n")
+        ts = tsconvert.csv_to_node_metadata(ts, csv, "first_name", "name")
+        nodes = ts.tables.nodes
+        assert nodes[0].metadata == {
+            "first_name": "LUCY",
+            "name": "LUCY",
+            "value": "12",
+        }
+        assert nodes[1].metadata == {
+            "first_name": "BILL",
+            "name": "BILL",
+            "value": "42",
+        }
+        assert nodes[2].metadata == {"name": "BOB"}
+
+    def test_missing_in_ts(self):
+        ts = tsconvert.from_newick(self.newick)
+        csv = io.StringIO("first_name\tvalue\nBILL\t42\nLUCY\t12\nFRANK\t25\n")
+        ts = tsconvert.csv_to_node_metadata(ts, csv, "first_name", "name")
+        nodes = ts.tables.nodes
+        assert nodes[0].metadata == {
+            "first_name": "LUCY",
+            "name": "LUCY",
+            "value": "12",
+        }
+        assert nodes[1].metadata == {
+            "first_name": "BILL",
+            "name": "BILL",
+            "value": "42",
+        }
+        assert nodes[2].metadata == {"name": "BOB"}
+
+    def test_id_not_in_metadata(self):
+        ts = tsconvert.from_newick(self.newick)
+        csv = io.StringIO("first_name\tvalue\nBILL\t42\nLUCY\t12\nFRANK\t25\n")
+        with pytest.raises(KeyError):
+            ts = tsconvert.csv_to_node_metadata(ts, csv, "first_name", "missing_key")
+
+    def test_id_col_not_in_csv(self):
+        ts = tsconvert.from_newick(self.newick)
+        csv = io.StringIO("first_name\tvalue\nBILL\t42\nLUCY\t12\nFRANK\t25\n")
+        with pytest.raises(KeyError):
+            ts = tsconvert.csv_to_node_metadata(ts, csv, "missing_name", "missing_key")
+
+    def test_nextstrain(self):
+        with open(
+            os.path.join(os.path.dirname(__file__), "data", "nextstrain.nwk")
+        ) as f:
+            newick = f.read()
+        ts = tsconvert.from_newick(newick)
+        ts = tsconvert.csv_to_node_metadata(
+            ts,
+            os.path.join(os.path.dirname(__file__), "data", "nextstrain.tsv"),
+            "strain",
+            "name",
+        )
+        assert ts.node(34).metadata == {
+            "age": "?",
+            "authors": "CZB Cliahub Consortium et al",
+            "country": "USA",
+            "country_exposure": "USA",
+            "date": "2020-05-01",
+            "date_submitted": "2020-05-13",
+            "division": "California",
+            "division_exposure": "California",
+            "genbank_accession": "MT460092",
+            "gisaid_epi_isl": "?",
+            "host": "Homo sapiens",
+            "length": "29857",
+            "location": "",
+            "name": "USA/CA-CZB-1092/2020",
+            "originating_lab": "?",
+            "region": "North America",
+            "region_exposure": "North America",
+            "segment": "genome",
+            "sex": "?",
+            "strain": "USA/CA-CZB-1092/2020",
+            "submitting_lab": "?",
+            "title": "Severe acute respiratory syndrome coronavirus 2 isolate SARS-CoV-2"
+            "/human/USA/CA-CZB-1092/2020, complete genome",
+            "url": "https://www.ncbi.nlm.nih.gov/nuccore/MT460092",
+            "virus": "ncov",
+        }
