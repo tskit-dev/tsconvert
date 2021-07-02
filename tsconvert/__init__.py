@@ -23,4 +23,4 @@
 #
 from tsconvert.newick import *  # NOQA
 from tsconvert.oriented_forest import *  # NOQA
-from tsconvert.texttable import *  # NOQA
+from tsconvert.tables import *  # NOQA
