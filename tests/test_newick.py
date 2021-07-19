@@ -1,7 +1,7 @@
 #
 # MIT License
 #
-# Copyright (c) 2019 Tskit Developers
+# Copyright (c) 2019-2021 Tskit Developers
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -22,6 +22,7 @@
 # SOFTWARE.
 #
 import itertools
+import pathlib
 
 import dendropy
 import msprime
@@ -496,3 +497,11 @@ class TestNewicks:
             {"name": "BILL", "comment": "42"},
             {"comment": '!"£$%^&*_+-={}<>,.?/~#|`¬'},
         )
+
+    def test_nextstrain_newick(self):
+        with open(pathlib.Path(__file__).parent / "data" / "nextstrain.nwk") as f:
+            newick = f.read()
+        ts = tsconvert.from_newick(newick)
+        assert ts.num_trees == 1
+        assert ts.num_nodes == 268
+        assert ts.num_edges == 267
