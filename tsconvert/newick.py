@@ -188,7 +188,7 @@ def from_newick(string, min_edge_length=0):
                 raise ValueError(
                     "tskit tree sequences cannot contain edges with lengths"
                     " <= 0. Set min_edge_length to force lengths to a"
-                    "minimum size"
+                    " minimum size"
                 )
             child_node_id = get_or_add_node(child, nodes[node_id].time - length)
             tables.edges.add_row(0, 1, node_id, child_node_id)
