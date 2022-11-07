@@ -463,7 +463,7 @@ class TestNewicks:
         ):
             tsconvert.from_newick("(2:0.10,3:0.00);")
 
-        ts = tsconvert.from_newick("(2:0.10,3:0.00);", 0.01)
+        ts = tsconvert.from_newick("(2:0.10,3:0.00);", min_edge_length=0.01)
         assert ts.first().newick(precision=2) == "(2:0.10,3:0.01);"
 
     def test_negative_branch_length(self):
@@ -473,7 +473,7 @@ class TestNewicks:
         ):
             tsconvert.from_newick("(2:0.10,3:0.00);")
 
-        ts = tsconvert.from_newick("(2:0.10,3:-10.01);", 0.01)
+        ts = tsconvert.from_newick("(2:0.10,3:-10.01);", min_edge_length=0.01)
         assert ts.first().newick(precision=2) == "(2:0.10,3:0.01);"
 
     def test_ids(self):

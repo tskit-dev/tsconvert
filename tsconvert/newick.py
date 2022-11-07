@@ -124,7 +124,7 @@ def to_ms(ts):
     return output
 
 
-def from_newick(string, min_edge_length=0, *, span=1) -> tskit.TreeSequence:
+def from_newick(string, *, min_edge_length=0, span=1) -> tskit.TreeSequence:
     """
     Create a tree sequence representation of the specified newick string.
 
