@@ -498,6 +498,12 @@ class TestNewicks:
             {"comment": '!"£$%^&*_+-={}<>,.?/~#|`¬'},
         )
 
+    def test_span(self):
+        ts = tsconvert.from_newick("(2:0.10,3:0.20);")
+        assert ts.sequence_length == 1.0
+        ts = tsconvert.from_newick("(2:0.10,3:0.20);", span=128.0)
+        assert ts.sequence_length == 128.0
+
     def test_nextstrain_newick(self):
         with open(pathlib.Path(__file__).parent / "data" / "nextstrain.nwk") as f:
             newick = f.read()

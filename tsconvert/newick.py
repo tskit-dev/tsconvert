@@ -124,9 +124,9 @@ def to_ms(ts):
     return output
 
 
-def from_newick(string, min_edge_length=0):
+def from_newick(string, min_edge_length=0, *, span=1) -> tskit.TreeSequence:
     """
-    Returns a tree sequence representation of the specified newick string.
+    Create a tree sequence representation of the specified newick string.
 
     The tree sequence will contain a single tree, as specified by the newick. All
     leaf nodes will be marked as samples (``tskit.NODE_IS_SAMPLE``). Newick names and
@@ -137,6 +137,9 @@ def from_newick(string, min_edge_length=0):
         value. Unlike newick, tskit doesn't support zero or negative edge lengths, so
         setting this argument to a small value is necessary when importing trees with
         zero or negative lengths.
+    :param float span: The span of the tree, and therefore the
+        :attr:`~TreeSequence.sequence_length` of the returned tree sequence.
+    :return: A tree sequence consisting of a single tree.
     """
     trees = newick.loads(string)
     if len(trees) > 1:
@@ -144,7 +147,7 @@ def from_newick(string, min_edge_length=0):
     if len(trees) == 0:
         raise ValueError("Newick string was empty")
     tree = trees[0]
-    tables = tskit.TableCollection(1)
+    tables = tskit.TableCollection(span)
     nodes = tables.nodes
     nodes.metadata_schema = tskit.MetadataSchema(
         {
