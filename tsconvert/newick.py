@@ -194,7 +194,7 @@ def from_newick(string, *, min_edge_length=0, span=1) -> tskit.TreeSequence:
                     " minimum size"
                 )
             child_node_id = get_or_add_node(child, nodes[node_id].time - length)
-            tables.edges.add_row(0, 1, node_id, child_node_id)
+            tables.edges.add_row(0, span, node_id, child_node_id)
     # Rewrite node times to fit the tskit convention of zero at the youngest leaf
     nodes = tables.nodes.copy()
     youngest = min(tables.nodes.time)
