@@ -26,7 +26,7 @@ import newick
 import tskit
 
 
-def from_ms(string):
+def from_ms(string) -> tskit.TreeSequence:
     """
     Returns a tree sequence representation of the specified ms formatted tree output.
     """
@@ -113,7 +113,7 @@ def from_ms(string):
     return tables.tree_sequence()
 
 
-def to_ms(ts):
+def to_ms(ts) -> str:
     """
     Returns an ms-formatted version of the specified tree sequence.
     """
@@ -205,7 +205,7 @@ def from_newick(string, *, min_edge_length=0, span=1) -> tskit.TreeSequence:
     return tables.tree_sequence()
 
 
-def get_dendropy_node_id(node):
+def get_dendropy_node_id(node) -> int:
     """
     From a DendroPy Node object, returns the ID of that node.
     """
@@ -215,7 +215,7 @@ def get_dendropy_node_id(node):
         return int(node._label.split()[1])
 
 
-def from_argon(string, sequence_length):
+def from_argon(string, sequence_length) -> tskit.TreeSequence:
     """
     Returns a tree sequence representation of an ARGON .trees file.
     (Does not include mutations!)
@@ -261,6 +261,6 @@ def from_argon(string, sequence_length):
     return tables.tree_sequence().simplify()
 
 
-def to_newick(tree, precision=16):
+def to_newick(tree, precision=16) -> str:
     # TODO implement a clean python version here.
     return tree.newick(precision=precision)
