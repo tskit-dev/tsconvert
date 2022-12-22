@@ -29,7 +29,7 @@ setup(
     },
     project_urls={
         "Bug Reports": "https://github.com/tskit-dev/tsconvert/issues",
-        "Source": "https://github.com/tsckit-dev/tsconvert",
+        "Source": "https://github.com/tskit-dev/tsconvert",
     },
     license="MIT",
     platforms=["POSIX", "MacOS X"],
