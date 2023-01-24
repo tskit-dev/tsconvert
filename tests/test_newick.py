@@ -527,3 +527,15 @@ class TestNewicks:
     def test_bad_time_units(self, time_units):
         with pytest.raises(TypeError):
             tsconvert.from_newick("(2:0.10,3:0.20);", time_units=time_units)
+
+    @pytest.mark.parametrize("keyname", ["strain", ""])
+    def test_alternative_name(self, keyname):
+        ts = tsconvert.from_newick("(2:0.10,3:0.20);", node_name_key=keyname)
+        youngest = ts.node(np.where(ts.nodes_time == ts.nodes_time.min())[0][0])
+        assert "name" not in youngest.metadata
+        assert youngest.metadata[keyname] == str(3)
+
+    @pytest.mark.parametrize("keyname", [1, 1.3, False, (), b"binary"])
+    def test_bad_alternative_name(self, keyname):
+        with pytest.raises(TypeError):
+            tsconvert.from_newick("(2:0.10,3:0.20);", node_name_key=keyname)
