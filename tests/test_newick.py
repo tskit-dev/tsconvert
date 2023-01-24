@@ -86,7 +86,8 @@ def get_nonbinary_example(sample_size=20, recombination_rate=0, random_seed=42):
 class TestSingleTreeRoundTrip:
     """
     Tests that we can successfully roundtrip trees with various topologies
-    from a tree sequence containing a single tree.
+    from a tree sequence containing a single tree. Note that the time units
+    are not round-tripped as they cannot be stored in the Newick file.
     """
 
     def verify(self, ts):
@@ -513,3 +514,16 @@ class TestNewicks:
         assert ts.num_trees == 1
         assert ts.num_nodes == 268
         assert ts.num_edges == 267
+
+    def test_default_time_units(self):
+        ts = tsconvert.from_newick("(2:0.10,3:0.20);")
+        assert ts.time_units == tskit.TIME_UNITS_UNKNOWN
+
+    def test_time_units(self):
+        ts = tsconvert.from_newick("(2:0.10,3:0.20);", time_units="generations")
+        assert ts.time_units == "generations"
+
+    @pytest.mark.parametrize("time_units", [1, 1.3, False, ()])
+    def test_bad_time_units(self, time_units):
+        with pytest.raises(TypeError):
+            tsconvert.from_newick("(2:0.10,3:0.20);", time_units=time_units)
