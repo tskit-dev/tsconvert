@@ -124,7 +124,9 @@ def to_ms(ts) -> str:
     return output
 
 
-def from_newick(string, *, min_edge_length=0, span=1) -> tskit.TreeSequence:
+def from_newick(
+    string, *, min_edge_length=0, span=1, time_units=None
+) -> tskit.TreeSequence:
     """
     Create a tree sequence representation of the specified newick string.
 
@@ -139,6 +141,9 @@ def from_newick(string, *, min_edge_length=0, span=1) -> tskit.TreeSequence:
         zero or negative lengths.
     :param float span: The span of the tree, and therefore the
         :attr:`~TreeSequence.sequence_length` of the returned tree sequence.
+    :param str time_units: The value assigned to the :attr:`~TreeSequence.time_units`
+        property of the resulting tree sequence. Default: ``None`` resulting in the
+        time units taking the default of :attr:`tskit.TIME_UNITS_UNKNOWN`.
     :return: A tree sequence consisting of a single tree.
     """
     trees = newick.loads(string)
@@ -148,6 +153,8 @@ def from_newick(string, *, min_edge_length=0, span=1) -> tskit.TreeSequence:
         raise ValueError("Newick string was empty")
     tree = trees[0]
     tables = tskit.TableCollection(span)
+    if time_units is not None:
+        tables.time_units = time_units
     nodes = tables.nodes
     nodes.metadata_schema = tskit.MetadataSchema(
         {
