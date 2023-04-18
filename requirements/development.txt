@@ -1,4 +1,3 @@
-codecov
 coverage
 flake8
 mock
@@ -15,3 +14,4 @@ sphinx
 sphinx-argparse
 sphinx_rtd_theme
 pandas
+pre-commit
