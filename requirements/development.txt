@@ -14,3 +14,4 @@ sphinx
 sphinx-argparse
 sphinx_rtd_theme
 pandas
+pre-commit
