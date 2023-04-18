@@ -1,4 +1,8 @@
-version: 2
+version: 2.1
+
+orbs:
+  codecov: codecov/codecov@3.2.4
+
 jobs:
   build:
     docker:
@@ -25,8 +29,10 @@ jobs:
           name: Run Python tests 
           command: |
             python3 -m pytest tests --cov=tsconvert --cov-report=xml --cov-branch tests
-            python3 -m codecov
             rm .coverage
+
+      - codecov/upload:
+          token: CODECOV_TOKEN
 
       - run:
           name: Build Python package
