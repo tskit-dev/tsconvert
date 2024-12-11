@@ -6,7 +6,7 @@ orbs:
 jobs:
   build:
     docker:
-      - image: circleci/python:3.7-buster
+      - image: cimg/python:3.10.16
     working_directory: /home/circleci/tsconvert
     steps:
       - checkout
@@ -16,6 +16,7 @@ jobs:
       - run:
           name: Install dependencies and set path
           command: |
+            sudo apt-get update
             sudo apt-get install libgsl-dev # Needed for 3rd party sims without wheels
             pip install --user -r requirements/development.txt
             pip install twine --user
